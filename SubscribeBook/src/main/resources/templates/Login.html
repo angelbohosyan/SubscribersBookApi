@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Login</title>
+</head>
+<body id="body" onload="load()">
+
+    <div id="home">
+        <button onclick="removeHomeAppendLogin()">
+            Login
+        </button>
+
+        <br>
+
+        <label for="name">url:</label>
+        <input type="text" id="url" name="url"><br>
+        <input type="button" onclick="PostUrl()" value="Submit url">
+        <div id="urls">
+        </div>
+        <br><br><br>
+        <div id="urls2">
+        </div>
+    </div>
+
+    <div id="login">
+        <button onclick="removeLoginAppendHome()">
+            Home
+        </button>
+
+        <br><br><br>
+
+        <label for="name">name:</label><br>
+        <input type="text" id="name" name="fname"><br>
+        <label for="password">password:</label><br>
+        <input type="password" id="password" name="lname"><br>
+        <input type="button" onclick="Authenticate()" value="Authenticate"><br>
+        <input type="button" onclick="Hello()" value="Hello">
+
+        <br><br><br><br><br>
+
+        <label for="Rname">name:</label><br>
+        <input type="text" id="rName" name="rName"><br>
+        <label for="password">password:</label><br>
+        <input type="password" id="rPassword" name="rPassword"><br>
+        <label for="password">email:</label><br>
+        <input type="text" id="email" name="email"><br>
+        <input type="button" onclick="Register()" value="Register">
+    </div>
+
+</body>
+<script src="https://code.jquery.com/jquery-latest.min.js"></script>
+<script defer>
+
+    var jwt;
+
+    var home = document.getElementById("home");
+    var login = document.getElementById("login");
+    var body = document.getElementById("body");
+    var urls2 = document.getElementById("urls2")
+
+    function Authenticate() {
+        $.ajax({
+            type: "POST",
+            url: "http://localhost:8080/authenticate",
+            data: JSON.stringify({ username: document.getElementById("name").value,
+                password : document.getElementById("password").value }),
+            contentType: "application/json",
+            dataType: "json",
+            success: function (result) {
+                jwt = result.jwt;
+            },
+            error: function (result, status) {
+                console.log(result);
+            }
+        });
+    }
+    function Hello() {
+        $.ajax({
+            type: "GET",
+            url: "http://localhost:8080/hello",
+            beforeSend: function(request) {
+                request.setRequestHeader("Authorization", "Bearer " + jwt);
+            },
+            success: function (result) {
+                console.log(result);
+            },
+            error: function (result, status) {
+                console.log(result);
+            }
+        });
+    }
+    function Register() {
+        $.ajax({
+            type: "POST",
+            url: "http://localhost:8080/register",
+            data: JSON.stringify({ name: document.getElementById("rName").value,
+                email: document.getElementById("email").value,
+                password : document.getElementById("rPassword").value }),
+            contentType: "application/json",
+            dataType: "json",
+            error: function (result) {
+                alert(result.responseText)
+            }
+        });
+    }
+    function PostUrl() {
+        $.ajax({
+            type: "POST",
+            url: "http://localhost:8080/url",
+            contentType: "application/json",
+            dataType: "json",
+            data: JSON.stringify({
+                url: document.getElementById("url").value
+            }),
+            beforeSend: function(request) {
+                request.setRequestHeader("Authorization", "Bearer " + jwt);
+            },
+            success: function (result) {
+                var divWithUrls = document.getElementById("urls");
+                for(var a = 0 ; a< result.length ; a++) {
+                    divWithUrls.innerHTML += "<a href='" + result[a] + "'>" + result[a] + '</a><br>';
+                    console.log(result[a]);
+                }
+
+                divWithUrls.innerHTML += "You find what you need?<br>" +
+                '<button onclick="UserGotResultAfterSubmit(\'' + document.getElementById('url').value + '\')">Yes</button>' +
+                '<button onclick="UserNotFoundUrlAfterSubmit(\'' + document.getElementById('url').value + '\')">No</button><br></div>';
+
+            },
+            error: function (result, status) {
+                console.log(result);
+            }
+        });
+    }
+
+    function UserFoundUrl() {
+        document.getElementById("urls").innerHTML = null;
+    }
+
+    function removeHomeAppendLogin() {
+        var help = home;
+        body.removeChild(home);
+        home = help;
+        body.appendChild(login);
+    }
+    function removeLoginAppendHome() {
+        var help = login;
+        body.removeChild(login);
+        login = help;
+        body.appendChild(home);
+    }
+    function load() {
+        var help = home;
+        body.removeChild(home);
+        home = help;
+    }
+</script>
+<script>
+    console.log(Notification.permission);
+
+    if(Notification.permission==="granted") {
+        showNotifications();
+    } else if(Notification.permission !== "denied") {
+        Notification.requestPermission()
+    }
+
+    const map1 = new Map();
+
+    function showNotifications() {
+        if(jwt != null) {
+            $.ajax({
+                type: "GET",
+                url: "http://localhost:8080/test",
+                beforeSend: function (request) {
+                    request.setRequestHeader("Authorization", "Bearer " + jwt);
+                },
+                success: function (data) {
+                    for (let i = 0; i < data.length; i++) {
+                        if (!(map1.has(data[i].resultUrl) && map1.get(data[i].resultUrl) === data[i].url)) {
+                            urls2.innerHTML += "<div id='" + i + "'><a href='" + data[i].url + "'>" + data[i].resultUrl + ":" + data[i].url + '</a>' +
+                                '<button onclick="UserGotResult(\'' + data[i].url + '\' ,\'' + data[i].resultUrl + '\',\'' + i + '\')">Yes</button>' +
+                                '<button onclick="UserNotFoundUrl(\'' + data[i].url + '\' ,\'' + data[i].resultUrl + '\',\'' + i + '\')">No</button><br></div>';
+                            map1.set(data[i].resultUrl, data[i].url)
+                            showNotificationForGoogle(data[i].resultUrl, data[i].url)
+                        }
+                    }
+                }
+            });
+        }
+    }
+
+    function UserNotFoundUrl(url,resultUrl,i) {
+        document.getElementById("urls2").removeChild(document.getElementById(i))
+        $.ajax({
+            type: "POST",
+            url: "http://localhost:8080/userNotFoundUrl",
+            contentType: "application/json",
+            dataType: "json",
+            data: JSON.stringify({
+                url: url,
+                resultUrl: resultUrl
+            }),
+            beforeSend: function(request) {
+                request.setRequestHeader("Authorization", "Bearer " + jwt);
+            },
+        });
+    }
+
+    function UserGotResult(url,resultUrl,i) {
+        document.getElementById("urls2").removeChild(document.getElementById(i))
+        $.ajax({
+            type: "POST",
+            url: "http://localhost:8080/userFoundUrl",
+            contentType: "application/json",
+            dataType: "json",
+            data: JSON.stringify({
+                url: url,
+                resultUrl: resultUrl
+            }),
+            beforeSend: function(request) {
+                request.setRequestHeader("Authorization", "Bearer " + jwt);
+            },
+        });
+    }
+    function UserNotFoundUrlAfterSubmit(resultUrl) {
+        document.getElementById("urls").innerHTML="";
+        $.ajax({
+            type: "POST",
+            url: "http://localhost:8080/userNotFoundUrl",
+            contentType: "application/json",
+            dataType: "json",
+            data: JSON.stringify({
+                url: "",
+                resultUrl: resultUrl
+            }),
+            beforeSend: function(request) {
+                request.setRequestHeader("Authorization", "Bearer " + jwt);
+            },
+        });
+    }
+
+    function UserGotResultAfterSubmit(resultUrl) {
+        document.getElementById("urls").innerHTML="";
+        $.ajax({
+            type: "POST",
+            url: "http://localhost:8080/userFoundUrl",
+            contentType: "application/json",
+            dataType: "json",
+            data: JSON.stringify({
+                url: "",
+                resultUrl: resultUrl
+            }),
+            beforeSend: function(request) {
+                request.setRequestHeader("Authorization", "Bearer " + jwt);
+            },
+        });
+    }
+
+    function showNotificationForGoogle(resultUrl,url) {
+        const notification = new Notification("New result for url:" + resultUrl,{
+            body: url
+        })
+    }
+
+    var t=setInterval(showNotifications,1000 * 10);
+
+</script>
+</html>

@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Home</title>
+</head>
+<body>
+<a href="http://localhost:63342/SubscribeBook/templates/Login.html?_ijt=10d1uj32lf98jtopsv4c5skq57&_ij_reload=RELOAD_ON_SAVE">
+    Login
+</a>
+
+<label for="name">name:</label><br>
+<input type="text" id="name" name="fname"><br>
+<input type="button" onclick="w()" value="Submite">
+
+</body>
+<script defer>
+
+    var jwt;
+
+    function f() {
+        $.ajax({
+            type: "POST",
+            url: "http://localhost:8080/authenticate",
+            data: JSON.stringify({ username: document.getElementById("name").value,
+                password : document.getElementById("password").value }),
+            contentType: "application/json",
+            dataType: "json",
+            success: function (result) {
+                jwt = result.jwt;
+            },
+            error: function (result, status) {
+                console.log(result);
+            }
+        });
+    }
+    function w() {
+        $.ajax({
+            type: "GET",
+            url: "http://localhost:8080/hello",
+            beforeSend: function(request) {
+                request.setRequestHeader("Authorization", "Bearer " + jwt);
+            },
+            success: function (result) {
+                console.log(result);
+            },
+            error: function (result, status) {
+                console.log(result);
+            }
+        });
+    }
+    function q() {
+        $.ajax({
+            type: "POST",
+            url: "http://localhost:8080/register",
+            data: JSON.stringify({ name: document.getElementById("rName").value,
+                email: document.getElementById("email").value,
+                password : document.getElementById("rPassword").value }),
+            contentType: "application/json",
+            dataType: "json",
+            success: function (result) {
+                jwt = result.jwt;
+            },
+            error: function (result, status) {
+                console.log(result);
+            }
+        });
+    }
+</script>
+</html>
