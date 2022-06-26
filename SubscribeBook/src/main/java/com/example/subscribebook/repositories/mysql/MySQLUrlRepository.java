@@ -67,9 +67,27 @@ public class MySQLUrlRepository implements UrlRepository {
     }
 
     @Override
+    public List<Integer> getUrlsById(int id) {
+        try {
+            return jdbcTemplate.query(GET_ALL_URL_ID_BY_USER_ID, (rs,map)-> rs.getInt("id"),id);
+        } catch (DataAccessException a) {
+            throw new GetUrlsException();
+        }
+    }
+
+    @Override
     public List<String> getUrlsByUserId(Integer id) {
         try {
             return jdbcTemplate.query(GET_ALL_URL_BY_USER_ID, new StringUrlMapper(), id);
+        } catch (DataAccessException e) {
+            throw new GetUrlsByUserIdException();
+        }
+    }
+
+    @Override
+    public boolean getUrlsByUserIdAndUrl(Integer urlId,Integer userId) {
+        try {
+            return jdbcTemplate.query(GET_URL_BY_ID_AND_USER_ID, new StringUrlMapper(), urlId,userId).size()>0;
         } catch (DataAccessException e) {
             throw new GetUrlsByUserIdException();
         }
@@ -116,13 +134,18 @@ public class MySQLUrlRepository implements UrlRepository {
         }
     }
 
+    @Override
+    public void deleteUrlById(Integer id) {
+        jdbcTemplate.update(DELETE_URL_BY_ID,id);
+    }
+
     @Transactional
     @Override
     public void deleteUrlsByUserIdAndUrlName(Integer id, String resultUrl) {
         try {
             List<UrlDAO> list = jdbcTemplate.query(GET_URL_BY_ID_AND_URL,new UrlMapper(),id,resultUrl);
             urlUrlResultsRepository.deleteUrlUrlResult(list.stream().map(UrlDAO::getId).toList());
-            jdbcTemplate.update(DELETE_URL,id,resultUrl);
+            jdbcTemplate.update(DELETE_URL_BY_USER_ID_AND_USER_ID,id,resultUrl);
         } catch (DataAccessException e) {
             throw new DeleteUrlsByUserIdAndUrlNameException();
         }
@@ -133,6 +156,7 @@ public class MySQLUrlRepository implements UrlRepository {
         try {
             return jdbcTemplate.queryForObject(GET_URL_BY_ID_AND_URL, new UrlMapper(), id,resultUrl).getId();
         } catch (DataAccessException e) {
+            e.printStackTrace();
             throw new GetIdByUserIdAndUrlException();
         }
     }
@@ -160,11 +184,16 @@ public class MySQLUrlRepository implements UrlRepository {
                 "INSERT INTO url (user_id, url) " +
                         "VALUES (?, ?)";
 
-        public static final String DELETE_URL =
+        public static final String DELETE_URL_BY_USER_ID_AND_USER_ID =
                 "DELETE from url where user_id=? and url=?";
 
+        public static final String DELETE_URL_BY_ID =
+                "DELETE from url where id=?";
+
         public static final String GET_URL_BY_ID_AND_URL =
-                "select * from url where user_id=? and url=?";
+                "select * from url " +
+                        "where user_id=? " +
+                        "and url=?";
 
         public static final String GET_URL =
                 "Select * from url where id=?";
@@ -177,11 +206,17 @@ public class MySQLUrlRepository implements UrlRepository {
         public static final String GET_ALL_URL_BY_USER_ID =
                 "Select url from url where user_id=?";
 
+        public static final String GET_ALL_URL_ID_BY_USER_ID =
+                "Select id from url where user_id=?";
+
         public static final String GET_ALL_ID_BY_USER_ID =
                 "Select id from url where user_id=?";
 
         public static final String GET_USER_ID_BY_ID =
                 "Select user_id from url where id=?";
+
+        public static final String GET_URL_BY_ID_AND_USER_ID =
+                "Select * from url where id=? and user_id=?";
 
         public static final String GET_ALL_USER_ID_BY_ID =
                 "Select nuur.url,us.name,ur.url as parent_url \n" +

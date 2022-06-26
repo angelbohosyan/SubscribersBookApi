@@ -3,6 +3,7 @@ package com.example.subscribebook.repositories.mysql;
 import com.example.subscribebook.exceptions.UserRepositoryExceptions.*;
 import com.example.subscribebook.mappers.SeenUrlMapper;
 import com.example.subscribebook.mappers.UserMapper;
+import com.example.subscribebook.models.Password;
 import com.example.subscribebook.models.User;
 import com.example.subscribebook.repositories.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -88,6 +89,20 @@ public class MySQLUserRepository implements UserRepository {
     }
 
     @Override
+    public User getUserWithPassword(String password) {
+        try {
+            return jdbcTemplate.queryForObject(GET_USER_BY_PASSWORD,new UserMapper(),password);
+        } catch (DataAccessException e) {
+            throw new GetUserWithPasswordException();
+        }
+    }
+
+    @Override
+    public void refreshPassword(int userId, String newPassword) {
+        jdbcTemplate.update(UPDATE_USER_PASSWORD,newPassword,userId);
+    }
+
+    @Override
     public User getUserWithName(String name) {
         try {
             return jdbcTemplate.queryForObject(GET_USER_BY_NAME, new UserMapper(), name);
@@ -134,6 +149,9 @@ public class MySQLUserRepository implements UserRepository {
         public static final String GET_USER =
                 "SELECT * FROM user WHERE id = ?";
 
+        public static final String GET_USER_BY_PASSWORD =
+                "SELECT * FROM user WHERE password = ?";
+
         public static final String DELETE_USER_WITH_NAME =
                 "delete FROM user WHERE id = ?";
 
@@ -145,6 +163,9 @@ public class MySQLUserRepository implements UserRepository {
 
         public static final String GET_USER_BY_EMAIL =
                 "SELECT * FROM user WHERE email = ?";
+
+        public static final String UPDATE_USER_PASSWORD =
+                "update user set password = ? where id=?";
 
         public static final String LIST_USERS =
                 "SELECT * FROM user";

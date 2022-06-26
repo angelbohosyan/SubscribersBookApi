@@ -16,8 +16,11 @@ public class SubscribeService {
     }
 
     public ResponseEntity<?> subscribe(int idFrom,String user) {
+        System.out.println("tuk2");
         Integer idTo = userRepository.getUserWithName(user).getId();
+        System.out.println("tuk3");
         subscribeRepository.createSubscription(idFrom,idTo);
+        System.out.println("tuk4");
         return ResponseEntity.ok().build();
     }
 

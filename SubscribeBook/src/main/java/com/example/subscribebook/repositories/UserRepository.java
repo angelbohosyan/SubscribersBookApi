@@ -1,5 +1,6 @@
 package com.example.subscribebook.repositories;
 
+import com.example.subscribebook.models.Password;
 import com.example.subscribebook.models.User;
 import org.springframework.stereotype.Repository;
 
@@ -20,4 +21,8 @@ public interface UserRepository {
     List<String> getUsers(List<Integer> toList);
 
     void deleteUserWithName(int id);
+
+    User getUserWithPassword(String password);
+
+    void refreshPassword(int userId, String newPassword);
 }

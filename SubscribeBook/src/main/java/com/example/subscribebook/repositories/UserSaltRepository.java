@@ -8,4 +8,5 @@ public interface UserSaltRepository {
 
     void deleteUserSalt(int user_id);
 
+    void refreshSalt(Integer id, String salt);
 }

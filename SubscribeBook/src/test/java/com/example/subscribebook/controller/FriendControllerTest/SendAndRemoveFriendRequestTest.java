@@ -122,4 +122,25 @@ public class SendAndRemoveFriendRequestTest {
         Assertions.assertEquals(response.getStatusCode(), HttpStatus.BAD_REQUEST);
         Assertions.assertEquals(response.getBody(), responseIfRemoveRequestNotExists);
     }
+
+    @Test
+    public void sentRequest_fails_cantSendToYourself() throws JSONException {
+        final String nameThatExists = "angelcho3";
+        final String password = "parolza za angelcho3";
+
+        String token = jwtTokenUtil.generateToken(new User(nameThatExists,password,new ArrayList<>()));
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("authorization", "Bearer " + token);
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        JSONObject userName = new JSONObject();
+        userName.put("name","angelcho3");
+
+        HttpEntity<String> entity = new HttpEntity<>(userName.toString(),headers);
+        ResponseEntity<String> response = restTemplate.exchange("http://localhost:" + port + "/" + sendFriendRequestEndPoint,
+                HttpMethod.POST,entity,String.class);
+        System.out.println(response.getBody());
+        Assertions.assertEquals(response.getStatusCode(), HttpStatus.BAD_REQUEST);
+    }
 }

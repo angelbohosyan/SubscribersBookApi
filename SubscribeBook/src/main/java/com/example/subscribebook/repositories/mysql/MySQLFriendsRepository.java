@@ -44,7 +44,7 @@ public class MySQLFriendsRepository implements FriendsRepository {
     @Override
     public boolean isFriends(int user_id_1, int user_id_2) {
         try {
-            return jdbcTemplate.query(GET_FRIEND,(rs, rowNum) -> rs.getInt("user_id_1"),user_id_1,user_id_2).size()>0;
+            return jdbcTemplate.query(GET_FRIEND,(rs, rowNum) -> rs.getInt("user_id_1"),user_id_1,user_id_2,user_id_2,user_id_1).size()>0;
         } catch (DataAccessException e) {
             throw new SelectFriendsException();
         }
@@ -65,10 +65,10 @@ public class MySQLFriendsRepository implements FriendsRepository {
                         "VALUES (?, ?)";
 
         public static final String DELETE_FRIENDS =
-                "delete from friends where (user_id_1=? and user_id_2=2) OR (user_id_1=? and user_id_2=1)";
+                "delete from friends where (user_id_1=? and user_id_2=?) OR (user_id_1=? and user_id_2=?)";
 
         public static final String GET_FRIEND =
-                "select user_id_1 from friends where (user_id_1=? and user_id_2=2) OR (user_id_1=? and user_id_2=1)";
+                "select user_id_1 from friends where (user_id_1=? and user_id_2=?) OR (user_id_1=? and user_id_2=?)";
 
         public static final String GET_FRIENDS =
                 "select user_id_1 from friends \n" +

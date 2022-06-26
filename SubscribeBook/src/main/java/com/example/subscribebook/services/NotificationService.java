@@ -5,6 +5,7 @@ import com.example.subscribebook.models.UrlWithUrl;
 import com.example.subscribebook.repositories.*;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class NotificationService {
@@ -32,7 +33,9 @@ public class NotificationService {
 
     public List<PeopleNewResults> getFollowedPeopleNews(int id) {
         List<Integer> followedPeopleList = subscribeRepository.getSubscriptions(id);
+        System.out.println(followedPeopleList.size());
         List<Integer> publicUrlsOfFollowedPeople = getPublicUrlsOfFollowedPeople(followedPeopleList);
+        System.out.println(publicUrlsOfFollowedPeople.size());
         return urlRepository.getUsersIdById(publicUrlsOfFollowedPeople);
     }
 
@@ -53,13 +56,6 @@ public class NotificationService {
         return urlRepository.getUsersIdById(friendsUrls);
     }
 
-    public List<PeopleNewResults> getFriendsNews(int id,int toId) {
-        List<Integer> friends = friendsRepository.getFriends(id);
-        List<Integer> urlsOfFriends = urlRepository.getUrlsByUsersId(friends);
-        List<Integer> friendsUrls = urlScopeRepository.getUrlScopeFriend(urlsOfFriends);
-        return urlRepository.getUsersIdById(friendsUrls);
-    }
-
     public List<UrlWithUrl> getUserPersonalUrlUpdate(Integer id) {
         List<String> urls = urlRepository.getUrlsByUserId(id);
         List<UrlWithUrl> list = newResultsForUrlWithUrlRepository.getUrlUrlResultsWithUrl(urls);
@@ -73,4 +69,13 @@ public class NotificationService {
         return result;
     }
 
+    public List<PeopleNewResults> getFriendsNewsForName(Integer toId) {
+        List<Integer> list = new ArrayList<>();
+        list.add(toId);
+        List<Integer> urlsOfFriends = urlRepository.getUrlsByUsersId(list);
+        System.out.println(urlsOfFriends.size());
+        List<Integer> friendsUrls = urlScopeRepository.getUrlScopeFriend(urlsOfFriends);
+        System.out.println(friendsUrls.size());
+        return urlRepository.getUsersIdById(friendsUrls);
+    }
 }

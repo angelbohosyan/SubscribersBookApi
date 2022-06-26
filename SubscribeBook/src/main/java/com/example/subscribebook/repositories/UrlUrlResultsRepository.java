@@ -11,6 +11,8 @@ public interface UrlUrlResultsRepository {
 
     void createMultipleUrlUrlResults(List<String> urls, Integer url_id);
 
+    List<String> getUrlUrlResultsWithUrlId(Integer id);
+
     List<UrlWithUrl> getUrlUrlResultsWithUrl();
 
     void deleteUrlUrlResult(List<Integer> toList);

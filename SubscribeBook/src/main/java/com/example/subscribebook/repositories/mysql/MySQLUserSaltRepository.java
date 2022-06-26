@@ -55,6 +55,11 @@ public class MySQLUserSaltRepository implements UserSaltRepository {
         }
     }
 
+    @Override
+    public void refreshSalt(Integer id, String salt) {
+        jdbcTemplate.update(UPDATE_SALT_BY_USER,salt,id);
+    }
+
     static class Queries {
         public static final String INSERT_USER_SALT =
                 "INSERT INTO user_salt (user_id, salt) " +
@@ -62,6 +67,9 @@ public class MySQLUserSaltRepository implements UserSaltRepository {
 
         public static final String GET_SALT_BY_USER =
                 "Select salt from user_salt where user_id = ?";
+
+        public static final String UPDATE_SALT_BY_USER =
+                "update user_salt set salt=? where user_id = ?";
 
         public static final String DELETE_SALT_BY_USER =
                 "delete from user_salt where user_id = ?";

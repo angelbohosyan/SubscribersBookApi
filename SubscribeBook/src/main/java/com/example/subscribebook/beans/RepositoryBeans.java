@@ -20,6 +20,12 @@ public class RepositoryBeans {
     }
 
     @Bean
+    public UrlErrorRepository urlErrorRepository(JdbcTemplate jdbcTemplate) {
+        return new MySQLUrlErrorRepository(jdbcTemplate);
+    }
+
+
+    @Bean
     public ProfilePictureRepository profilePictureRepository(JdbcTemplate jdbcTemplate) {
         return new MySQLProfilePictureRepository(jdbcTemplate);
     }

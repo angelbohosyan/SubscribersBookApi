@@ -30,7 +30,7 @@ public class NotificationController {
 
     @GetMapping("/checkForUpdate")
     public Updates checkForUpdate(@RequestHeader(name = "Authorization") String token) throws MessagingException, IOException {
-        Integer id = userRepository.getUserWithName(jwtTokenUtil.extractUsername(token.substring(7))).getId();
+        Integer id = jwtTokenUtil.extractIdWithBearer(token);
         return new Updates(notificationService.getUserPersonalUrlUpdate(id),
                 notificationService.getFollowedPeopleNews(id),
                 notificationService.getFriendsNews(id));
@@ -38,9 +38,9 @@ public class NotificationController {
 
     @GetMapping("/checkForUpdate/{name}")
     public List<PeopleNewResults> checkForUpdateFromUser(@RequestHeader(name = "Authorization") String token, @PathVariable String name) throws MessagingException, IOException {
-        Integer fromId = userRepository.getUserWithName(jwtTokenUtil.extractUsername(token.substring(7))).getId();
+        Integer fromId = jwtTokenUtil.extractIdWithBearer(token);
         Integer toId = userRepository.getUserWithName(name).getId();
-        if(friendRepository.isFriends(fromId,toId)) return notificationService.getFriendsNews(toId);
+        if(friendRepository.isFriends(fromId,toId)) return notificationService.getFriendsNewsForName(toId);
         return notificationService.getPersonNews(toId);
     }
 }

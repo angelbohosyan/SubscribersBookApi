@@ -73,6 +73,11 @@ public class MySQLUrlUrlResultsRepository implements UrlUrlResultsRepository {
     }
 
     @Override
+    public List<String> getUrlUrlResultsWithUrlId(Integer id) {
+        return jdbcTemplate.query(GET_URL_BY_ID,(rs, rowNum) -> rs.getString("url"),id);
+    }
+
+    @Override
     public List<UrlWithUrl> getUrlUrlResultsWithUrl() {
         try {
             return jdbcTemplate.query(JOIN_ON_URL_ID_WITH_URL,new UrlUrlMapper());
@@ -83,6 +88,7 @@ public class MySQLUrlUrlResultsRepository implements UrlUrlResultsRepository {
 
     @Override
     public void deleteUrlUrlResult(List<Integer> toList) {
+        if(toList.size()==0) return;
         StringBuilder stringBuilder = new StringBuilder(DELETE_URL_URL_RESULTS);
         stringBuilder.append(" or url_id=?".repeat(toList.size()-1));
         try {
@@ -103,6 +109,9 @@ public class MySQLUrlUrlResultsRepository implements UrlUrlResultsRepository {
 
         public static final String DELETE_URL_URL_RESULTS =
                 "delete from url_url_results where url_id=?";
+
+        public static final String GET_URL_BY_ID =
+                "select url from url_url_results where url_id=?";
 
         public static final String JOIN_ON_URL_ID_WITH_URL =
                 "SELECT url.url as url,url_url_results.url as url_result FROM url_url_results\n" +

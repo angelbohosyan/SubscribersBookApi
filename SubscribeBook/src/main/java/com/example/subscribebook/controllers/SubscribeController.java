@@ -1,5 +1,6 @@
 package com.example.subscribebook.controllers;
 
+import com.example.subscribebook.models.UserName;
 import com.example.subscribebook.repositories.UserRepository;
 import com.example.subscribebook.services.SubscribeService;
 import com.example.subscribebook.util.JwtTokenUtil;
@@ -24,14 +25,15 @@ public class SubscribeController {
     }
 
     @PostMapping("/subscribe")
-    public ResponseEntity<?> subscribe(@RequestBody String user, @RequestHeader(name = "Authorization") String token) {
-        Integer idFrom = userRepository.getUserWithName(jwtTokenUtil.extractUsername(token.substring(7))).getId();
-        return subscribeService.subscribe(idFrom,user);
+    public ResponseEntity<?> subscribe(@RequestBody UserName user, @RequestHeader(name = "Authorization") String token) {
+        Integer idFrom = jwtTokenUtil.extractIdWithBearer(token);
+        System.out.println("tuk");
+        return subscribeService.subscribe(idFrom,user.getName());
     }
 
     @DeleteMapping("/subscribe")
-    public ResponseEntity<?> unSubscribe(@RequestBody String user, @RequestHeader(name = "Authorization") String token) {
-        Integer idFrom = userRepository.getUserWithName(jwtTokenUtil.extractUsername(token.substring(7))).getId();
-        return subscribeService.unSubscribe(idFrom,user);
+    public ResponseEntity<?> unSubscribe(@RequestBody UserName user, @RequestHeader(name = "Authorization") String token) {
+        Integer idFrom = jwtTokenUtil.extractIdWithBearer(token);
+        return subscribeService.unSubscribe(idFrom,user.getName());
     }
 }

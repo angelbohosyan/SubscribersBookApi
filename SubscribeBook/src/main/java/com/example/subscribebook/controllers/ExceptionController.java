@@ -3,6 +3,7 @@ package com.example.subscribebook.controllers;
 import com.example.subscribebook.ApiError;
 import com.example.subscribebook.exceptions.UserRepositoryExceptions.CreateUserException;
 import com.example.subscribebook.exceptions.UserRepositoryExceptions.GetUserWithNameException;
+import com.example.subscribebook.exceptions.UserRepositoryExceptions.GetUserWithPasswordException;
 import com.example.subscribebook.exceptions.UserSaltRepositoryExceptions.GetSaltByUserException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,6 +21,11 @@ public class ExceptionController {
     }
     @ExceptionHandler(GetSaltByUserException.class)
     public ResponseEntity<?> GetSaltByUserExceptionHandler() {
+        return ResponseEntity.notFound().build();
+    }
+
+    @ExceptionHandler(GetUserWithPasswordException.class)
+    public ResponseEntity<?> GetUserWithPasswordExceptionHandler() {
         return ResponseEntity.notFound().build();
     }
 }

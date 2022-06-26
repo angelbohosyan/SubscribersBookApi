@@ -13,7 +13,11 @@ public interface UrlRepository {
 
     List<UrlDAO> getUrls();
 
+    List<Integer> getUrlsById(int id);
+
     List<String> getUrlsByUserId(Integer id);
+
+    boolean getUrlsByUserIdAndUrl(Integer urlId,Integer userId);
 
     void deleteUrlsByUserIdAndUrlName(Integer id, String resultUrl);
 
@@ -26,4 +30,6 @@ public interface UrlRepository {
     List<PeopleNewResults> getUsersIdById(List<Integer> publicUrlsOfFollowedPeople);
 
     Integer getUserIdById(Integer id);
+
+    void deleteUrlById(Integer id);
 }

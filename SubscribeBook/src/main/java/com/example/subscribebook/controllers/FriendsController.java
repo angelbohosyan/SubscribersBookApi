@@ -1,8 +1,6 @@
 package com.example.subscribebook.controllers;
 
 import com.example.subscribebook.models.UserName;
-import com.example.subscribebook.repositories.FriendRequestRepository;
-import com.example.subscribebook.repositories.FriendsRepository;
 import com.example.subscribebook.repositories.UserRepository;
 import com.example.subscribebook.services.FriendsService;
 import com.example.subscribebook.util.JwtTokenUtil;
@@ -28,33 +26,32 @@ public class FriendsController {
 
     @PostMapping("/sendFriendRequest")
     public ResponseEntity<?> sentRequest(@RequestHeader(name = "Authorization") String token, @RequestBody UserName name) {
-        if(jwtTokenUtil.extractUsername(token.substring(7)).equals(name.getName())) {
-            System.out.println("hi");
+        if(userRepository.getUser(jwtTokenUtil.extractIdWithBearer(token)).getName().equals(name.getName())) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("You can not send friend request to yourself");
         }
-        Integer idFrom = userRepository.getUserWithName(jwtTokenUtil.extractUsername(token.substring(7))).getId();
+        Integer idFrom = jwtTokenUtil.extractIdWithBearer(token);
         return friendsService.sentRequest(name.getName(),idFrom);
     }
 
-    @PostMapping("/removeFriendRequest")
+    @DeleteMapping("/removeFriendRequest")
     public ResponseEntity<?> removeRequest(@RequestHeader(name = "Authorization") String token, @RequestBody UserName name) {
-        if(jwtTokenUtil.extractUsername(token.substring(7)).equals(name.getName())) {
+        if(userRepository.getUser(jwtTokenUtil.extractIdWithBearer(token)).getName().equals(name.getName())) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("You can not remove friend request from yourself");
         }
-        Integer idFrom = userRepository.getUserWithName(jwtTokenUtil.extractUsername(token.substring(7))).getId();
+        Integer idFrom = jwtTokenUtil.extractIdWithBearer(token);
         return friendsService.removeRequest(name.getName(),idFrom);
     }
 
     @DeleteMapping("/removeFriend")
     public ResponseEntity<?> removeFriend(@RequestHeader(name = "Authorization") String token,@RequestBody UserName name) {
-        Integer idFrom = userRepository.getUserWithName(jwtTokenUtil.extractUsername(token.substring(7))).getId();
+        Integer idFrom = jwtTokenUtil.extractIdWithBearer(token);
         return friendsService.removeFriend(name.getName(),idFrom);
     }
 
-    @DeleteMapping("/createFriend")
+    @PostMapping("/createFriend")
     public ResponseEntity<?> createFriend(@RequestHeader(name = "Authorization") String token,@RequestBody UserName name) {
-        Integer idFrom = userRepository.getUserWithName(jwtTokenUtil.extractUsername(token.substring(7))).getId();
-        Integer idTo = userRepository.getUserWithName(jwtTokenUtil.extractUsername(name.getName())).getId();
+        Integer idFrom = jwtTokenUtil.extractIdWithBearer(token);
+        Integer idTo = userRepository.getUserWithName(name.getName()).getId();
         return friendsService.createFriend(idTo,idFrom);
     }
 

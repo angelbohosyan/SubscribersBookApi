@@ -8,6 +8,7 @@ import com.example.subscribebook.repositories.UrlScopeRepository;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static com.example.subscribebook.repositories.mysql.MySQLUrlScopeRepository.Queries.*;
@@ -42,6 +43,7 @@ public class MySQLUrlScopeRepository implements UrlScopeRepository {
     @Override
     public List<Integer> getUrlScopePublic(List<Integer> urlId) {
         StringBuilder stringBuilder = new StringBuilder(GET_URL_SCOPE_PUBLIC);
+        if(urlId.size()==0) return new ArrayList<>();
         if(urlId.size()==1) stringBuilder.append("url_id=?");
         else {
             stringBuilder.append("(url_id=?");
@@ -62,6 +64,7 @@ public class MySQLUrlScopeRepository implements UrlScopeRepository {
     @Override
     public List<Integer> getUrlScopeFriend(List<Integer> urlId) {
         StringBuilder stringBuilder = new StringBuilder(GET_URL_SCOPE_FRIEND);
+        if(urlId.size()==0) return new ArrayList<>();
         if(urlId.size()==1) stringBuilder.append("url_id=?");
         else {
             stringBuilder.append("(url_id=?");
@@ -91,7 +94,7 @@ public class MySQLUrlScopeRepository implements UrlScopeRepository {
                 "Select url_id From url_scope where scope='public' and ";
 
         public static final String GET_URL_SCOPE_FRIEND =
-                "Select url_id From url_scope where scope='friend' and ";
+                "Select url_id From url_scope where (scope='friend' or scope='public') and ";
     }
 
 }

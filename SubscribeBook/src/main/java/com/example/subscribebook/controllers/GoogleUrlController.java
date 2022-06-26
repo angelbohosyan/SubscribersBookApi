@@ -5,10 +5,13 @@ import com.example.subscribebook.models.MakePostPublicRequest;
 import com.example.subscribebook.models.UrlDAO;
 import com.example.subscribebook.models.UrlRequest;
 import com.example.subscribebook.models.UrlWithUrl;
+import com.example.subscribebook.rabbit.config.MessagingConfig;
 import com.example.subscribebook.repositories.*;
 import com.example.subscribebook.services.GoogleApiService;
 import com.example.subscribebook.services.GoogleUrlService;
 import com.example.subscribebook.util.JwtTokenUtil;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.EnableScheduling;
@@ -16,16 +19,15 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 
 @CrossOrigin(origins = "*")
 @RestController
 @EnableScheduling
 public class GoogleUrlController {
 
+    @Autowired
+    private  RabbitTemplate rabbitTemplate;
     private final GoogleUrlService googleUrlService;
     private final UserRepository userRepository;
     private final JwtTokenUtil jwtTokenUtil;
@@ -39,9 +41,7 @@ public class GoogleUrlController {
 
     private final SeenUrlsRepository seenUrlsRepository;
 
-    private final GoogleApiService googleApiService;
-
-    public GoogleUrlController(GoogleUrlService googleUrlService, UserRepository userRepository, JwtTokenUtil jwtTokenUtil, NewResultsForUrlWithUrlRepository newResultsForUrlWithUrlRepository, UrlRepository urlRepository, UrlUrlResultsRepository urlUrlResultsRepository, UrlScopeRepository urlScopeRepository, SeenUrlsRepository seenUrlsRepository, GoogleApiService googleApiService) {
+    public GoogleUrlController( GoogleUrlService googleUrlService, UserRepository userRepository, JwtTokenUtil jwtTokenUtil, NewResultsForUrlWithUrlRepository newResultsForUrlWithUrlRepository, UrlRepository urlRepository, UrlUrlResultsRepository urlUrlResultsRepository, UrlScopeRepository urlScopeRepository, SeenUrlsRepository seenUrlsRepository, GoogleApiService googleApiService) {
         this.googleUrlService = googleUrlService;
         this.userRepository = userRepository;
         this.jwtTokenUtil = jwtTokenUtil;
@@ -50,12 +50,12 @@ public class GoogleUrlController {
         this.urlUrlResultsRepository = urlUrlResultsRepository;
         this.urlScopeRepository = urlScopeRepository;
         this.seenUrlsRepository = seenUrlsRepository;
-        this.googleApiService = googleApiService;
     }
 
     @PostMapping("/userFoundUrl")
     public ResponseEntity<?> userFoundUrl(@RequestBody UrlWithUrl urlWithUrl, @RequestHeader(name = "Authorization") String token) {
-        Integer id = userRepository.getUserWithName(jwtTokenUtil.extractUsername(token.substring(7))).getId();
+        System.out.println(urlWithUrl.getResultUrl() + " " + urlWithUrl.getUrl());
+        Integer id = jwtTokenUtil.extractIdWithBearer(token);
         return googleUrlService.userFoundUrl(urlWithUrl,id);
     }
 
@@ -70,13 +70,22 @@ public class GoogleUrlController {
     }
 
     @PostMapping("/url")
-    public HashSet<String> submitUrl(@RequestBody UrlRequest url, @RequestHeader(name = "Authorization") String token) throws IOException {
-        Integer id = userRepository.getUserWithName(jwtTokenUtil.extractUsername(token.substring(7))).getId();
+    public ResponseEntity<?> submitUrl(@RequestBody UrlRequest url, @RequestHeader(name = "Authorization") String token) throws IOException {
+        Integer id = jwtTokenUtil.extractIdWithBearer(token);
         url.setUrl(url.getUrl().replace(' ','_'));
         UrlDAO urlDAO = urlRepository.createUrl(url.getUrl(), id);
-        HashSet<String> result = googleApiService.getGoogleLinks(url.getUrl());
-        urlUrlResultsRepository.createMultipleUrlUrlResults(result.stream().toList(), urlDAO.getId());
-        return result;
+        rabbitTemplate.convertAndSend(MessagingConfig.EXCHANGE,MessagingConfig.ROUTING_KEY,urlDAO);
+        return ResponseEntity.ok().body(urlDAO.getId());
+    }
+
+    @GetMapping("/url/{urlId}")
+    public ResponseEntity<?> getResult(@PathVariable Integer urlId, @RequestHeader(name = "Authorization") String token) {
+        int userId = jwtTokenUtil.extractIdWithBearer(token);
+        if(urlRepository.getUrlsByUserIdAndUrl(urlId, userId)) {
+            return ResponseEntity.ok().body(urlUrlResultsRepository.getUrlUrlResultsWithUrlId(urlId));
+        } else {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
     }
 
     @Scheduled(fixedRate = 10000)
@@ -111,7 +120,7 @@ public class GoogleUrlController {
 
     @PostMapping("/makeUrlPublic")
     public ResponseEntity<?> makePostPublic(@RequestHeader(name = "Authorization") String token,@RequestBody MakePostPublicRequest urlId) {
-        Integer id = userRepository.getUserWithName(jwtTokenUtil.extractUsername(token.substring(7))).getId();
+        Integer id = jwtTokenUtil.extractIdWithBearer(token);
         if(urlRepository.getUserIdById(urlId.getUrlId()).intValue()==id.intValue()) {
             urlScopeRepository.deleteUrlScope(urlId.getUrlId());
             urlScopeRepository.createUrlScope(urlId.getUrlId(),"public");
@@ -121,11 +130,27 @@ public class GoogleUrlController {
         }
     }
 
+    @PostMapping("/makeUrlFriend")
+    public ResponseEntity<?> makePostFriend(@RequestHeader(name = "Authorization") String token,@RequestBody MakePostPublicRequest urlId) {
+        Integer id = jwtTokenUtil.extractIdWithBearer(token);
+        if(urlRepository.getUserIdById(urlId.getUrlId()).intValue()==id.intValue()) {
+            urlScopeRepository.deleteUrlScope(urlId.getUrlId());
+            urlScopeRepository.createUrlScope(urlId.getUrlId(),"friend");
+            return ResponseEntity.ok().build();
+        } else {
+            return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).body("The url doesn't belong to the user");
+        }
+    }
+
     @PostMapping("/userNotFoundUrl")
     public ResponseEntity<?> userNotFoundUrl(@RequestBody UrlWithUrl urlWithUrl,@RequestHeader(name = "Authorization") String token) {
-        Integer id = userRepository.getUserWithName(jwtTokenUtil.extractUsername(token.substring(7))).getId();
+        System.out.println(urlWithUrl.getResultUrl() + " " + urlWithUrl.getUrl());
+        Integer id = jwtTokenUtil.extractIdWithBearer(token);
+        System.out.println("tuk");
         if(!newResultsForUrlWithUrlRepository.exist(urlWithUrl)) return ResponseEntity.notFound().build();
+        System.out.println("tuk2");
         if(!urlRepository.exist(urlWithUrl.getResultUrl(),id)) return ResponseEntity.notFound().build();
+        System.out.println("tuk3");
         if(!urlWithUrl.getUrl().equals("")) {
             urlUrlResultsRepository.createUrlUrlResults(urlWithUrl.getResultUrl(),urlRepository.getIdByUserIdAndUrl(id,urlWithUrl.getResultUrl()));
         }

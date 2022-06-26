@@ -1,17 +1,10 @@
 package com.example.subscribebook.services;
 
-import com.example.subscribebook.models.AuthenticationRequest;
-import com.example.subscribebook.models.AuthenticationResponse;
-import com.example.subscribebook.models.RegisterInput;
-import com.example.subscribebook.models.User;
-import com.example.subscribebook.repositories.ProfilePictureRepository;
-import com.example.subscribebook.repositories.UrlRepository;
-import com.example.subscribebook.repositories.UserRepository;
-import com.example.subscribebook.repositories.UserSaltRepository;
+import com.example.subscribebook.models.*;
+import com.example.subscribebook.repositories.*;
 import com.example.subscribebook.util.JwtTokenUtil;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.validator.routines.EmailValidator;
-import org.apache.tomcat.util.http.fileupload.FileUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -30,6 +23,7 @@ import java.util.Base64;
 
 public class AccountService {
 
+    private final MailService mailService;
     private final UserSaltRepository userSaltRepository;
 
     private final AuthenticationManager authenticationManager;
@@ -42,13 +36,20 @@ public class AccountService {
 
     private final ProfilePictureRepository profilePictureRepository;
 
-    public AccountService(UserSaltRepository userSaltRepository, AuthenticationManager authenticationManager, JwtTokenUtil jwtTokenUtil, UserDetailsService userDetailsService, UserRepository userRepository, NotificationService notificationService, UrlRepository urlRepository, ProfilePictureRepository profilePictureRepository) {
+    private final UrlUrlResultsRepository urlUrlResultsRepository;
+
+    private final UrlRepository urlRepository;
+
+    public AccountService(MailService mailService, UserSaltRepository userSaltRepository, AuthenticationManager authenticationManager, JwtTokenUtil jwtTokenUtil, UserDetailsService userDetailsService, UserRepository userRepository, NotificationService notificationService, ProfilePictureRepository profilePictureRepository, UrlUrlResultsRepository urlUrlResultsRepository, UrlRepository urlRepository1) {
+        this.mailService = mailService;
         this.userSaltRepository = userSaltRepository;
         this.authenticationManager = authenticationManager;
         this.jwtTokenUtil = jwtTokenUtil;
         this.userDetailsService = userDetailsService;
         this.userRepository = userRepository;
         this.profilePictureRepository = profilePictureRepository;
+        this.urlUrlResultsRepository = urlUrlResultsRepository;
+        this.urlRepository = urlRepository1;
     }
 
     public ResponseEntity<?> getToken(int id, AuthenticationRequest authenticationRequest) {
@@ -88,12 +89,16 @@ public class AccountService {
 
     public ResponseEntity<?> delete(int id) {
         userSaltRepository.deleteUserSalt(id);
+        urlUrlResultsRepository.deleteUrlUrlResult(urlRepository.getUrlsById(id));
+        urlRepository.getUrlsById(id).forEach(urlRepository::deleteUrlById);
         userRepository.deleteUserWithName(id);
         return ResponseEntity.ok().build();
     }
 
     public ResponseEntity<?> getProfile(Integer id) {
-        return ResponseEntity.ok().body(userRepository.getUser(id));
+        User user = userRepository.getUser(id);
+        user.setPassword(null);
+        return ResponseEntity.ok().body(user);
     }
 
     public ResponseEntity<?>  createProfilePicture(int idFrom, String base64) throws IOException {
@@ -109,6 +114,15 @@ public class AccountService {
         File file = new File(path);
         byte[] encoded = org.apache.commons.codec.binary.Base64.encodeBase64(org.apache.commons.io.FileUtils.readFileToByteArray(file));
         return ResponseEntity.ok().body(new String(encoded, StandardCharsets.US_ASCII));
+    }
+
+    public ResponseEntity<?> refreshPassword(String oldPassword, Password newPassword) {
+        User user = userRepository.getUserWithPassword(oldPassword);
+        String salt = getSalt();
+        String sha256hex = DigestUtils.sha256Hex(newPassword.getPassword()+salt);
+        userRepository.refreshPassword(user.getId(),sha256hex);
+        userSaltRepository.refreshSalt(user.getId(),salt);
+        return ResponseEntity.ok().build();
     }
 }
 
