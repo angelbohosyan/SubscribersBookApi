@@ -94,7 +94,7 @@ public class MailService {
     private CredentialsProvider getAuthProvider() {
         CredentialsProvider provider = new BasicCredentialsProvider();
         UsernamePasswordCredentials credentials
-                = new UsernamePasswordCredentials("api", "c0fa20fc35766cb732d388aaaefd4752-50f43e91-e8a7c2eb");
+                = new UsernamePasswordCredentials("api", "key-here");
         provider.setCredentials(AuthScope.ANY, credentials);
         return provider;
     }
